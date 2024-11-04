@@ -1,0 +1,44 @@
+[
+    {
+        "name": "reset / clear",
+        "include": "",
+        "exclude": "",
+        "highlight": ""
+    },
+    {
+        "name": "highlight entry nodes",
+        "include": "",
+        "exclude": "",
+        "highlight": "<entry>"
+    },
+    {
+        "name": "highlight exit nodes",
+        "include": "",
+        "exclude": "",
+        "highlight": "<exit>"
+    },
+    {
+        "name": "highlight require(..msg.sender..)",
+        "include": "",
+        "exclude": "",
+        "highlight": "require\\([^)]*msg\\.sender[^)]*\\)"
+    },
+    {
+        "name": "external state changing functions (no inheritors)",
+        "include": "(?=💥)",
+        "exclude": "(slither|🟩|constructor)",
+        "highlight": ">out 0"
+    },
+    {
+        "name": "internal state changing functions (no inheritors)",
+        "include": "",
+        "exclude": "(💥|slither|🟩|constructor)",
+        "highlight": ">out 0"
+    },
+    {
+        "name": "Scope: (in scope, no interfaces)",
+        "include": "(?=🎯)",
+        "exclude": "(interface|/I)",
+        "highlight": ">out 0"
+    }
+]

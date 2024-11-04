@@ -1,0 +1,75 @@
+{
+	"name": "static-analysis-helper",
+	"description": "Static Analysis Helper",
+	"version": "0.0.1",
+	"publisher": "Alec Maly",
+	"private": true,
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/xxx"
+	},
+	"engines": {
+		"vscode": "^1.74.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"main": "./out/extension.js",
+	"activationEvents": [
+	],
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Static Analysis Extension Configuration",
+			"properties": {
+				"static-analysis.enableUnsafeEval": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable or disable unsave eval."
+				}
+			}
+		},
+		"viewsContainers": {
+			"panel": [
+			  {
+				"id": "static-analysis",
+				"title": "Static Analysis",
+				"icon": "resources/static-analysis.svg"
+			  }
+			]
+		  },
+		  "views": {
+			"static-analysis": [
+			  {
+				"type": "webview",
+				"id": "static-analysis-view",
+				"name": "View",
+				"visibility":"visible"
+			  }
+			]
+		  },
+		"commands": [
+			{
+				"command": "staticAnalysis.load",
+				"title": "Load static analysis data for webview",
+				"category": "Static Analysis Functions"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint \"src/**/*.ts\"",
+		"watch": "tsc -w -p ./"
+	},
+	"devDependencies": {
+		"@types/node": "^16.18.34",
+		"@types/vscode": "^1.73.0",
+		"@types/vscode-webview": "^1.57.0",
+		"@typescript-eslint/eslint-plugin": "^5.42.0",
+		"@typescript-eslint/parser": "^5.42.0",
+		"eslint": "^8.26.0",
+		"typescript": "^5.1.3"
+	}
+}
