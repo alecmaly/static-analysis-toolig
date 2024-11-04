@@ -90,10 +90,10 @@ echo "EOF"
 
     printf "\e[0;36m## Grep to Detectors:\e[0m\n"
     echo "\t# Example: adding if and loops to detectors"
-    echo 'grep -rnEI --exclude-dir={.vscode,.git,node_modules} "\\bif\\b" . | awk -F: '"'"'{print $1 ":" $2 ":" index($0, $4) ":" substr($0, index($0, $3))}'"'"' > grep-output.txt'
+    echo 'grep -rnEI --exclude-dir={.vscode,.git,node_modules,.json} "\\bif\\b" . | awk -F: '"'"'{print $1 ":" $2 ":" index($0, $4) ":" substr($0, index($0, $3))}'"'"' > grep-output.txt'
     echo 'src_dir=`pwd` && docker run --rm -it -v $(pwd):/app/output -v "$src_dir":"$src_dir" alecmaly/sa-tool python3 /app/grep-to-detector-results.py -b "$src_dir" -c "grep-if statements" -a'
     echo ""
-    echo 'grep -rnEI --exclude-dir={.vscode,.git,node_modules} "\\b(while|for|until|do)\\b" . | awk -F: '"'"'{print $1 ":" $2 ":" index($0, $4) ":" substr($0, index($0, $3))}'"'"' > grep-output.txt'
+    echo 'grep -rnEI --exclude-dir={.vscode,.git,node_modules,.json} "\\b(while|for|until|do)\\b" . | awk -F: '"'"'{print $1 ":" $2 ":" index($0, $4) ":" substr($0, index($0, $3))}'"'"' > grep-output.txt'
     echo 'src_dir=`pwd` && docker run --rm -it -v $(pwd):/app/output -v "$src_dir":"$src_dir" alecmaly/sa-tool python3 /app/grep-to-detector-results.py -b "$src_dir" -c "grep-loops" -a'
     echo ""
 
