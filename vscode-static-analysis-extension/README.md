@@ -32,7 +32,7 @@ click 				= (1st click = caller | 2nd click = callee)
 click 				= go-to next node (caller|callee of current node/function)
 ctrl + click		= add caller|callee nodes from current node
 alt + click			= remove caller|callee nodes from current node  (temporary - will come back when graph is reset)
-ctrl + alt + click	= remove caller|callee nodes from current node  (must be toggled off for graph to reset, this is a setting on the function)
+shift + alt + click	= remove caller|callee nodes from current node  (must be toggled off for graph to reset, this is a setting on the function)
 
 
 <node : codeblock>
