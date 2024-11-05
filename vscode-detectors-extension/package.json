@@ -142,7 +142,7 @@
             "activitybar": [
                 {
                     "id": "slither-container",
-                    "title": "Slither",
+                    "title": "Static Analysis Detectors",
                     "icon": "resources/viewsContainer-icon.png"
                 }
             ]

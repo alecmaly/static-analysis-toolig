@@ -22,7 +22,7 @@ export let analysisRunning : boolean = false;
 // Functions
 export async function activate(context: vscode.ExtensionContext) {
     // Log our introductory message.
-    Logger.log("\u2E3B Slither: Solidity static analysis framework by Trail of Bits \u2E3B");
+    Logger.log("\u2E3B Static Analysis Detectors Extenison: by alecmaly.com, extended from Slither extension by Trail of Bits \u2E3B");
     
     // Initialize slither
     await slither.initialize();
