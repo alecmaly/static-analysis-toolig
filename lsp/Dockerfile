@@ -5,7 +5,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Update package lists and install necessary packages
-RUN apt-get update && apt-get install -y --no-install-recommends git golang-go npm curl ccls python3-pylsp default-jre wget jq unzip zip vim gpg lsb-release clangd
+RUN apt-get update && apt-get install -y --no-install-recommends git npm curl ccls python3-pylsp default-jre wget jq unzip zip vim gpg lsb-release clangd
 
 # # install jdk 21, ghidra dependency
 # RUN wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor -o /usr/share/keyrings/adoptium-archive-keyring.gpg && \
@@ -52,6 +52,15 @@ ENV PATH="/app/kotlin-language-server/server/build/install/server/bin:${PATH}"
 # RUN useradd -ms /bin/bash myuser
 # RUN chown -R myuser:myuser /app
 # USER myuser
+
+
+# Install Go 
+RUN export GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n 1) && \
+    wget https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf ${GO_VERSION}.linux-amd64.tar.gz && \
+    rm ${GO_VERSION}.linux-amd64.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
 
 
 # Install Go language server

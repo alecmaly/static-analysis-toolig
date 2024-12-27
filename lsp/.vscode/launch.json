@@ -10,7 +10,7 @@
         },
         "pathMappings": [
             {
-                "localRoot": "/home/ubuntu/Desktop/slither-custom-tooling/genaric/lsp/src",
+                "localRoot": "/home/alec/Desktop/slither-custom-tooling/genaric/lsp/src",
                 "remoteRoot": "/app"
             }
         ]

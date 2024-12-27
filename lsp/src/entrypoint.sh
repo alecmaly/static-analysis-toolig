@@ -44,6 +44,7 @@ if [ $# -eq 0 ]; then
     printf "\e[0;36m## Step 3: move files to .vscode for extension\e[0m\n"
     echo "mkdir -p .vscode/ext-static-analysis/graphs"
     echo "cp ./functions_html.json ./.vscode/ext-static-analysis/functions_html.json"
+    echo "cp ./decorations.json ./.vscode/ext-static-analysis/decorations.json"
     echo "cp ./callstacks.json ./.vscode/ext-static-analysis/callstacks.json"
     echo "cp ./scope_summaries_html.json ./.vscode/ext-static-analysis/scope_summaries_html.json"
     echo "cp ./inheritance_graph.json ./.vscode/ext-static-analysis/graphs/inheritance_graph.json"

@@ -108,4 +108,8 @@ if args.append_to_detector_resluts and os.path.exists(output_filepath):
         existing = json.loads(open(output_filepath, 'r').read())
         results = existing + results
 
+# create directory if not exists
+if not os.path.exists('./.vscode/ext-detectors'):
+    os.makedirs('./.vscode/ext-detectors')
+
 open(output_filepath, 'w').write(json.dumps(results))

@@ -115,6 +115,8 @@ def input_with_timeout(prompt, timeout, default_val=None):
         return default_val
     return result[0]
 
+
+
 # from python_jsonrpc_server import dispatchers
 
 # ISSUES: 
@@ -135,7 +137,6 @@ from urllib.parse import unquote
 
 # seconds to periodically pause to let LSP catch up in processing
 PAUSE_TIME = .33
-
 
 
 global errors
@@ -384,6 +385,47 @@ class LSPClient:
         self.doc_symbols_map = {}
         self.evaled_files = set()
         self.last_opened_doc = None
+
+        self.seen_textHighlights = []
+        self.textHighlights = {}
+        # data for color highlighting
+        self.opacity = "0.75"
+        self.colors = [
+            f"rgba(139, 0, 0, {self.opacity})",      # darkred
+            f"rgba(0, 0, 255, {self.opacity})",      # blue
+            f"rgba(0, 100, 0, {self.opacity})",      # darkgreen
+            f"rgba(255, 255, 0, {self.opacity})",    # yellow
+            f"rgba(128, 0, 128, {self.opacity})",    # purple
+            f"rgba(255, 140, 0, {self.opacity})",    # darkorange
+            f"rgba(165, 42, 42, {self.opacity})",    # brown
+            f"rgba(0, 139, 139, {self.opacity})",    # darkcyan
+            f"rgba(139, 0, 139, {self.opacity})",    # darkmagenta
+            f"rgba(0, 128, 128, {self.opacity})",    # teal
+            f"rgba(128, 0, 0, {self.opacity})",      # maroon
+            f"rgba(0, 0, 128, {self.opacity})",      # navy
+            f"rgba(128, 128, 0, {self.opacity})",    # olive
+            f"rgba(0, 255, 255, {self.opacity})",    # aqua
+            f"rgba(255, 0, 255, {self.opacity})"     # fuchsia
+        ]
+    def add_textHighlight(self, color_index, filepath, start_line, start_char, end_char, var_name = ""):
+        o = {
+                "name": var_name,
+                "type": "statevar",
+                "line": int(start_line),
+                "start": int(start_char),
+                "end": int(start_char) + len(var_name)
+            }
+        o_id = str(o)
+        if o_id in self.seen_textHighlights:
+            return
+        self.seen_textHighlights.append(o_id)
+
+        self.textHighlights \
+            .setdefault(filepath.split("#")[0], {}) \
+            .setdefault(f"background-color: {self.colors[color_index % len(self.colors)]}", []) \
+            .append(o)
+
+
 
     def symbol_to_loc(self, symbol, include_name=False, include_start_char=True):
         name = f"{symbol.get('name', "")}," if include_name else ""
@@ -1734,12 +1776,15 @@ class LSPClient:
 
 
 
-        # generate HTML
+
+
+        # generate HTML + state var text highlights
         for s in scopes:
             s['scope_summary_html'] = s.get('scope_summary_html', "")
             scope_filepath = s['id'].split(",")[-1].split("#")[0]
             state_vars_html = ""
-            for var_id in s.get('vars', []):
+            state_vars_html_header = ""
+            for var_i, var_id in enumerate(s.get('vars', [])):
                 ref_locations = tuple([self.symbol_to_loc(r) for r in self.var_ref_map[var_id]])
                 grouped_vars = vars_group.get(ref_locations, [var_id])
                 grouped_vars_locs = [v.split(',')[-1] for v in grouped_vars]
@@ -1748,6 +1793,8 @@ class LSPClient:
                 if len(grouped_vars) > 1 and var_id != next(iter(grouped_vars)):
                     continue
 
+                var_name = var_id.split(",")[0]
+                state_vars_html_header += f"<input type='checkbox' id='statevar-toc-{var_name}'><a href='scrollTo:a[value^=\"{var_id},\"]'>{var_name}</a><br>"
                 
                 # print grouped vars or var_id if no group is found
                 # NOTE: consider deleting from ref if found in grouped var_id
@@ -1756,12 +1803,16 @@ class LSPClient:
                     var_func = functions_map.get(grouped_var_id, {})
                     var_filepath = grouped_var_id.split(",")[-1]
                     var_filename = var_filepath.split("/")[-1]
+                    start_line = var_filepath.split("#")[1].split(":")[0]
+                    start_char = var_filepath.split("#")[1].split(":")[1]
 
                     init_filepath, lines = var_filepath.split("#")
                     init_line = lines.split(":")[0]
                     content = get_file_content(init_filepath, int(init_line) - 1).strip()
                     
                     state_vars_html += f"<div><a value='{var_id}' href='file://{var_filepath}'>{var_filename} | {var_name}</a> | {content}</div>"
+
+                    self.add_textHighlight(var_i, var_filepath, int(start_line), int(start_char), int(start_char) + len(var_name), var_name)
 
                 state_var_html_arr = []
                 for i, ref in enumerate(self.var_ref_map[var_id]):
@@ -1778,6 +1829,8 @@ class LSPClient:
                     if i > self.max_ref_tracking_count:
                         state_var_html_arr.append(f"<div class='collapsable'>...max references reached ({len(self.var_ref_map[var_id])})...<br></div>")
                         break
+
+                    self.add_textHighlight(var_i, ref['uri'].replace("file://", ""), int(get_range(ref)['start']['line']), int(get_range(ref)['start']['character']), int(get_range(ref)['end']['character']), var_name)
 
                     # get content
                     ref_func = functions_map.get(ref['func_id'], {})
@@ -1819,7 +1872,7 @@ class LSPClient:
             if state_vars_html:
                 print("state vars in scope: ", s['id'])
                 # compress to reduce change of out of memory exceptions
-                s['scope_summary_html'] += f"<h2>State Vars</h2>{state_vars_html}"
+                s['scope_summary_html'] += f"<h2>State Vars</h2>{state_vars_html_header}<br><br>{state_vars_html}"
 
             ## add functions to scope
             func_html = ""
@@ -1849,13 +1902,15 @@ class LSPClient:
             self.class_inheritance[parent] = list(self.class_inheritance[parent])
 
 
+
+        # convert tto list for json output
         for f in functions:
             if 'vars' in f:
                 f['vars'] = list(f['vars'])
         for s in scopes:
             if 'vars' in s:
                 s['vars'] = list(s['vars'])
-
+                
 
 
         if self.append_output_file:
@@ -1876,6 +1931,8 @@ class LSPClient:
         self.function_calls = {**current_function_calls, **self.function_calls} if self.append_output_file else self.function_calls
         self.class_inheritance = {**current_class_inheritance, **self.class_inheritance} if self.append_output_file else self.class_inheritance
 
+
+        open(f"{output_file_prefix}decorations.json", 'w').write(json.dumps(self.textHighlights))
         open(f"{output_file_prefix}functions_html.json", "w").write(json.dumps(list(functions)))
         open(f"{output_file_prefix}scope_summaries_html.json", "w").write(json.dumps(list(scopes)))
         open(f"{output_file_prefix}function_calls.json", "w").write(json.dumps(self.function_calls))
@@ -2011,6 +2068,7 @@ if __name__ == "__main__":
     arg_parser.add_argument("--append_output_file", "-a", action="store_true", default=False, help="Append to output file")
     arg_parser.add_argument("--prescript", "-ps", type=str, help="Prescript to run before starting language server")
     arg_parser.add_argument("--postscript", "-po", type=str, help="Postscript to run after starting language server")
+    arg_parser.add_argument("--auto-accept-all-languages", "-aaal", action="store_true", default=False, help="Auto accept all languages")
     arg_parser.add_argument("--verbose", "-v", action="store_true", default=False, help="Print all requests / responses to & from language server")
     arg_parser.add_argument("--stderr-to-file", "-stf", action="store_true", default=False, help="Redirect stderr to file")
     arg_parser.add_argument("--debug", action="store_true", default=False)
@@ -2072,13 +2130,14 @@ if __name__ == "__main__":
             if running_for_language:
                 print(f"Running LSP Client for language: {colored.fg('yellow')}{language}{colored.attr('reset')}")
                 found_languages.append(language)
-            
-        while True:
-            timeout = 8
-            r = input_with_timeout(f"Are you sure you want to run for all languages (auto 'y' in {timeout}sec)? (y/n): ", timeout, 'y')
-            if r.lower() != "y":
-                exit(1)
-            break
+        
+        if not args.auto_accept_all_languages:
+            while True:
+                timeout = 8
+                r = input_with_timeout(f"Are you sure you want to run for all languages (auto 'y' in {timeout}sec)? (y/n): ", timeout, 'y')
+                if r.lower() != "y" and len(r) != 0:
+                    exit(1)
+                break
 
         languages = found_languages
 

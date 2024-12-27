@@ -9,9 +9,9 @@ cd ~/Desktop/slither-custom-tooling/genaric/lsp
 
 
 # python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d ~/Desktop/projects/java -l java
-# python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d /home/ubuntu/Desktop/projects/c/httpd/modules/mappers/mod_rewrite.c -l c
+# python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d /home/alec/Desktop/projects/c/httpd/modules/mappers/mod_rewrite.c -l c
 # python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d "~/Desktop/projects/javascript/tmp" -l typescript # --debug
-python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d "/home/ubuntu/Desktop/projects/php/updraftplus/methods" -l php
+python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d "/home/alec/Desktop/projects/php/updraftplus/methods" -l php
 # python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d "~/Desktop/projects/go/example/hello" -l go 
 # python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d "~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py" -l python
 # python3 ~/Desktop/slither-custom-tooling/genaric/lsp/1_extract_w_lsp.py -d "~/Desktop/projects/python/django-starter-project/apps" -l python

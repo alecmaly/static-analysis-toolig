@@ -27,6 +27,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Enable or disable unsave eval."
+				},
+				"static-analysis.enableTextHighlights": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable or disable text highlights."
 				}
 			}
 		},

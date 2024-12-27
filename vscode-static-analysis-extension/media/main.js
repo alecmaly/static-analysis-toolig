@@ -371,7 +371,22 @@ function handleAnchorClick(evt, cy = null) {
         } else {
             vscode.postMessage({command: "show_function", function_id: href.slice(1), mode: window.callstacks_graph_mode, include_related_callstacks: window.include_related_callstacks})
         }
-    
+    } else if (href.startsWith("scrollTo:")) {
+        const [cmd, selector, parents_to_highlight] = href.split(":")
+        const element = document.querySelector(selector)
+        if (element) {
+            element.scrollIntoView({behavior: "smooth", block: "center"})
+            
+            let parent = element
+            for (let i = 0; i < parents_to_highlight; i++) {
+                parent = parent.parentElement
+            }
+            parent.style.backgroundColor = "yellow"
+            setTimeout(() => {
+                parent.style.backgroundColor = ""
+            }, 2000)
+        }
+        return
     } else if (href.startsWith("file:")) {
         // open function summary
         if (evt.altKey && evt.ctrlKey) {
@@ -706,7 +721,7 @@ let main_module = (function () {
             });
         }
 
-        for (const link of root_node.querySelectorAll('a[href^="file:"],a[href^="#"]')) {
+        for (const link of root_node.querySelectorAll('a[href^="scrollTo:"],a[href^="file:"],a[href^="#"]')) {
             link.removeEventListener('click', handleAnchorClick);
             link.addEventListener('click', handleAnchorClick);
         }
@@ -1336,6 +1351,15 @@ let main_module = (function () {
                         parent.checked = true
                         if (!(parent.style.accentColor === 'yellow')) {
                             parent.style.accentColor = color
+                        }
+                    }
+
+                    let var_table_of_contents = document.querySelector(`[id^="statevar-toc-${state_var_name}"]`)
+                    if (var_table_of_contents) {
+                        var_table_of_contents.checked = true
+                        
+                        if (!(var_table_of_contents.style.accentColor === 'yellow')) {
+                            var_table_of_contents.style.accentColor = color
                         }
                     }
                 }

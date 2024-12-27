@@ -192,3 +192,19 @@ export interface mergeCallstacksIntoGraphParams {
 	override_color?: string  // move to getCallstacksGraphParams, update functions
 }
 
+
+
+
+type DecorationRange = {
+	line: number;
+	start: number;
+	end: number;
+};
+
+type DecorationsData = {
+	[filePath: string]: {
+		[style: string]: DecorationRange[];
+	};
+};
+
+

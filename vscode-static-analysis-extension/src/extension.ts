@@ -10,7 +10,8 @@ import {
 	SearchTemplate,
 	ScopeSummary, FunctionResult, FunctionRelationship, FunctionIdObj, FilteredFunctionState,
 	CallGraphHashmap, CallstacksEdgeColorsHashmap, FiletLineColumnOffsetHashmap, 
-	CallGraph, graphGroup, graphNode, graphEdge, SourceFilesHashmap, ScopeDefinitionsHashmap, RelatedCallstacksHashmap, funcStateVarReadWrittenMappingHashmap, ScopeDefinition
+	CallGraph, graphGroup, graphNode, graphEdge, SourceFilesHashmap, ScopeDefinitionsHashmap, RelatedCallstacksHashmap, funcStateVarReadWrittenMappingHashmap, ScopeDefinition,
+	DecorationRange, DecorationsData
 } from './types';
 
 
@@ -19,7 +20,6 @@ import { LookupAddress, lookup, lookupService } from 'dns';
 import { start } from 'repl';
 // import { lookup } from 'dns';
 // import { start } from 'repl';
-
 
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -78,8 +78,179 @@ export async function activate(context: vscode.ExtensionContext) {
                 // Reload the webview if the specific setting has changed
 				provider.reloadWebview()
             }
+
+			if (event.affectsConfiguration('static-analysis.enableTextHighlights')) {
+				configureTextHighlights(provider)
+			}
         })
     );
+
+
+	configureTextHighlights(provider)
+}
+
+function configureTextHighlights(provider: StaticAnalysisViewProvider) {
+	const activeDecorations: Map<vscode.TextEditor, vscode.TextEditorDecorationType[]> = new Map();
+
+	if (vscode.workspace.workspaceFolders) {
+		let decorationsFilePath = path.join(vscode.workspace.workspaceFolders[0].uri.path, ".vscode", "ext-static-analysis", "decorations.json") // Update this path as needed
+		
+		if (!fs.existsSync(decorationsFilePath)) {
+			console.error("Decorations file does not exist:", decorationsFilePath);
+			return;
+		}
+
+		function parseStyle(style: string): vscode.DecorationRenderOptions {
+			const options: vscode.DecorationRenderOptions = {};
+	
+			style.split(";").forEach((rule) => {
+				const [key, value] = rule.split(":").map((part) => part.trim());
+				if (key && value) {
+					switch (key) {
+						case "border":
+							options.border = value;
+							break;
+						case "background-color":
+							options.backgroundColor = value;
+							break;
+						case "color":
+							options.color = value;
+							break;
+						case "text-decoration":
+							options.textDecoration = value;
+							break;
+						case "opacity":
+							options.opacity = value;
+						// Add more cases as needed
+					}
+				}
+			});
+	
+			return options;
+		}
+	
+		function clearDecorations(editor: vscode.TextEditor) {
+			const decorations = activeDecorations.get(editor);
+			if (decorations) {
+				decorations.forEach((type) => {
+					editor.setDecorations(type, []); // Clear the decorations
+				});
+				activeDecorations.delete(editor); // Remove from tracking
+			}
+		}
+
+		/**
+		 * Apply decorations to the provided editor based on the decoration data.
+		 */
+		function applyDecorations(editor: vscode.TextEditor, decorations: { type: vscode.TextEditorDecorationType, range: DecorationRange }[]) {
+			// Group ranges by decoration type
+			const decorationRanges: Map<vscode.TextEditorDecorationType, vscode.Range[]> = new Map();
+		
+			decorations.forEach(({ type, range }) => {
+				let offset = provider.getAuditCommentsLineOffset(editor.document.uri.fsPath, range.line + 1)
+				
+				const decorationRange = new vscode.Range(
+					new vscode.Position(range.line + offset - 1, range.start - 1),
+					new vscode.Position(range.line + offset - 1, range.end - 1)
+				);
+		
+				if (!decorationRanges.has(type)) {
+					decorationRanges.set(type, []);
+				}
+		
+				decorationRanges.get(type)?.push(decorationRange);
+			});
+		
+			// Apply all ranges for each decoration type
+			const appliedTypes: vscode.TextEditorDecorationType[] = [];
+			decorationRanges.forEach((ranges, type) => {
+				editor.setDecorations(type, ranges);
+				if (type && !appliedTypes.includes(type)) {
+					appliedTypes.push(type);
+				}
+			});
+
+			activeDecorations.set(editor, appliedTypes);
+		}
+	
+		/**
+		 * Load decorations from the JSON file and apply them to all open editors.
+		 */
+		async function loadDecorations(filePath: string) {
+			// if static-analysis.enableTextHighlights is enabled
+			const decorationTypes: Map<string, vscode.TextEditorDecorationType> = new Map();
+			try {
+				const rawData = await fs.readFileSync(filePath, 'utf-8');
+				let decorationsJson: DecorationsData = JSON.parse(rawData);
+
+				if (vscode.workspace.workspaceFolders) {
+					// make filepaths absolute if they are relative
+					let workspaceFolder = vscode.workspace.workspaceFolders[0].uri.path
+					for (let [filePath, decorations] of Object.entries(decorationsJson)) {
+						if (!filePath.startsWith(workspaceFolder)) {
+							const absolutePath = path.join(workspaceFolder, filePath)
+							decorationsJson[absolutePath] = decorations
+							delete decorationsJson[filePath]
+						}
+					}
+				}
+
+	
+				vscode.window.visibleTextEditors.forEach((editor) => {
+					clearDecorations(editor); // Clear existing decorations
+					const filePath = editor.document.fileName;
+					const decorationsForFile = decorationsJson[filePath];
+	
+					if (decorationsForFile) {
+						const decorations: { type: vscode.TextEditorDecorationType, range: DecorationRange }[] = [];
+	
+						for (const [style, ranges] of Object.entries(decorationsForFile)) {
+							let decorationType = decorationTypes.get(style);
+							if (!decorationType) {
+								const decorationOptions = parseStyle(style);
+								decorationType = vscode.window.createTextEditorDecorationType(decorationOptions);
+								decorationTypes.set(style, decorationType);
+							}
+	
+							ranges.forEach((range) => {
+								if (decorationType) {
+									decorations.push({ type: decorationType, range: range });
+								}
+							});
+
+						}
+						
+						if (vscode.workspace.getConfiguration("static-analysis").get("enableTextHighlights")) {
+							applyDecorations(editor, decorations);
+						}
+					}
+				});
+			} catch (error) {
+				console.error("Failed to load decorations:", error);
+			}
+		}
+	
+		/**
+		 * Watch for changes in the decorations JSON file.
+		 */
+		fs.watch(decorationsFilePath, { persistent: true }, (eventType) => {
+			if (eventType === 'change') {
+				loadDecorations(decorationsFilePath);
+			}
+		});
+	
+		/**
+		 * Handle newly opened or active editors.
+		 */
+		vscode.window.onDidChangeActiveTextEditor((editor) => {
+			if (editor) {
+				loadDecorations(decorationsFilePath);
+			}
+		});
+	
+		// Load decorations initially
+		loadDecorations(decorationsFilePath);
+	}
 }
 
 
